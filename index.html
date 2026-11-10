@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Simulación de líneas de transmisión: parámetros primarios y secundarios, barridos de frecuencia, gráficas interactivas y exportación CSV.">
+  <title>Simulador de Líneas de Transmisión</title><link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar"><a class="brand" href="./" aria-label="Inicio"><span class="brand-mark">∿</span><span>LINEA<span class="brand-light">LAB</span><small>INGENIERÍA ELECTRÓNICA</small></span></a><div class="top-meta"><span class="status-dot"></span> Entorno de simulación <span class="version">v1.0</span></div></header>
+<main>
+  <section class="page-heading"><div><p class="eyebrow">LABORATORIO VIRTUAL / LÍNEAS DE TRANSMISIÓN</p><h1>Simulador de Líneas de Transmisión</h1><p class="subtitle">Análisis de parámetros primarios y secundarios.</p></div><span class="stage"><span></span> Etapa 05 · Validación final</span></section>
+  <div class="workspace">
+    <aside class="panel configuration"><div class="panel-heading"><span class="section-icon">⚙</span><h2>Configuración</h2><span class="step-number">01</span></div>
+      <form id="configuration-form" novalidate>
+        <div class="form-section"><h3>TIPO DE LÍNEA</h3><div class="line-selector" role="group" aria-label="Tipo de línea">
+          <button type="button" class="line-option active" data-type="bifilar" aria-pressed="true"><span class="type-icon">◎ ◎</span><span>Bifilar</span></button>
+          <button type="button" class="line-option" data-type="coaxial" aria-pressed="false"><span class="type-icon">◉</span><span>Coaxial</span></button>
+          <button type="button" class="line-option" data-type="placas" aria-pressed="false"><span class="type-icon">═</span><span>Placas paralelas</span></button>
+        </div></div>
+        <div class="form-section"><h3>CONDICIONES DE OPERACIÓN</h3><label for="frequency">Frecuencia de operación</label><div class="input-with-unit"><input id="frequency" name="frequency" type="number" min="0" step="any" value="100" required aria-describedby="frequency-error"><select id="frequency-unit" name="frequencyUnit" aria-label="Unidad de frecuencia"><option>Hz</option><option>kHz</option><option selected>MHz</option><option>GHz</option></select></div><small class="error" id="frequency-error"></small>
+          <label for="conductor">Material conductor</label><select id="conductor" name="conductor"><option value="cobre">Cobre</option><option value="aluminio">Aluminio</option><option value="plata">Plata</option><option value="oro">Oro</option></select>
+          <label for="conductivity">Conductividad σc (S/m)</label><input id="conductivity" name="conductivity" type="number" min="0" step="any" value="58000000" required aria-describedby="conductivity-help conductivity-error"><small class="field-help" id="conductivity-help">Valor aproximado a 20 °C. Editable.</small><small class="error" id="conductivity-error"></small>
+          <label for="dielectric">Material dieléctrico</label><select id="dielectric" name="dielectric"><option value="aire">Aire</option><option value="vacio">Vacío</option><option value="ptfe">PTFE (teflón)</option><option value="polietileno">Polietileno</option></select>
+          <div class="material-fields"><div><label for="relativePermittivity">Permitividad relativa εr</label><input id="relativePermittivity" name="relativePermittivity" type="number" min="0" step="any" value="1.0006" required aria-describedby="dielectric-help relativePermittivity-error"><small class="error" id="relativePermittivity-error"></small></div><div><label for="lossTangent">Pérdidas tanδ</label><input id="lossTangent" name="lossTangent" type="number" min="0" step="any" value="0" required aria-describedby="dielectric-help lossTangent-error"><small class="error" id="lossTangent-error"></small></div></div>
+          <small class="field-help" id="dielectric-help">Valores iniciales orientativos, no dispersivos. Ajusta con la ficha del material a la frecuencia y temperatura de trabajo. Cambiar material carga sus valores iniciales.</small>
+        </div>
+        <div class="form-section"><div class="section-label"><h3>GEOMETRÍA</h3><span>Dimensiones en mm</span></div><div id="geometry-fields"></div><label for="length">Longitud de la línea</label><div class="input-with-unit"><input id="length" name="length" type="number" min="0" step="any" value="1" required aria-describedby="length-error"><span class="unit">m</span></div><small class="error" id="length-error"></small><small class="field-help">R′, L′, C′ y G′ son por metro; no se multiplican por esta longitud.</small></div>
+        <div class="form-actions"><button class="calculate" type="submit"><span>Calcular</span><span>→</span></button><button class="reset" type="reset">↺ <span>Restablecer</span></button><p id="form-status" class="form-status" role="status" aria-live="polite">Configura la línea para comenzar.</p></div>
+      </form>
+    </aside>
+    <div class="results-area">
+      <section class="diagram-panel" aria-labelledby="diagram-title"><div class="diagram-copy"><span class="eyebrow">MODELO GEOMÉTRICO</span><h2 id="diagram-title">Línea bifilar</h2><p id="diagram-description">Dos conductores paralelos separados por un medio dieléctrico.</p><span class="diagram-tag">Sección transversal · Esquema sin escala</span></div><div id="line-diagram" class="line-diagram"></div></section>
+      <section aria-labelledby="primary-title"><div class="section-heading"><h2 id="primary-title">Parámetros primarios</h2><span>POR UNIDAD DE LONGITUD</span></div><div class="metric-grid primary" id="primary-cards"></div></section>
+      <section class="panel model-panel" aria-labelledby="model-title">
+        <div class="panel-heading"><span class="section-icon">ⓘ</span><h2 id="model-title">Condiciones del modelo</h2><span class="subtle-badge">TEM · μr = 1</span></div>
+        <div class="model-body"><p class="model-summary">R′ utiliza una aproximación de alta frecuencia por efecto pelicular. L′ omite la inductancia interna. Se supone un dieléctrico homogéneo y materiales no magnéticos. Los parámetros secundarios heredan estas limitaciones.</p>
+          <div id="skin-diagnostics" class="skin-diagnostics" hidden></div>
+          <div id="model-warnings" class="model-warnings" role="status" aria-live="polite" hidden></div>
+          <details class="model-details"><summary>Ecuaciones, materiales y límites de validez</summary>
+            <p>ε = ε₀εr, μ = μc = μ₀, ω = 2πf. Rs = √(πfμc/σc), δ = √(2/(ωμcσc)). Ambos conductores tienen la misma conductividad.</p>
+            <dl><dt>Coaxial</dt><dd>C′ = 2πε/ln(b/a); L′ = μ ln(b/a)/(2π); R′ ≈ Rs(1/a + 1/b)/(2π).</dd><dt>Bifilar</dt><dd>A = arcosh(D/(2a)); C′ = πε/A; L′ = μA/π; R′ ≈ Rs/(πa), omitiendo proximidad.</dd><dt>Placas paralelas</dt><dd>C′ ≈ εw/d; L′ ≈ μd/w; R′ ≈ 2Rs/w. Placas anchas, sin efectos de borde.</dd><dt>Pérdidas dieléctricas</dt><dd>G′ = ωC′ tanδ en las tres geometrías. Dimensiones convertidas a metros.</dd></dl>
+            <dl><dt>Parámetros secundarios</dt><dd>Z′ = R′ + jωL′ (Ω/m), Y′ = G′ + jωC′ (S/m). Z₀ = √(Z′/Y′) (Ω), γ = √(Z′Y′) = α + jβ (m⁻¹), con α ≥ 0 y β &gt; 0 para el modelo pasivo. vₚ = ω/β (m/s), λ = 2π/β (m), αdB = 8.686α (dB/m; factor redondeado).</dd></dl>
+            <p>Se usa la convención temporal e<sup>jωt</sup> y propagación e<sup>−γz</sup>. Las ecuaciones secundarias se evalúan sin aproximación de bajas pérdidas y conservando la parte imaginaria de Z₀. No corrigen las aproximaciones de R′, L′, C′ y G′.</p>
+            <p>Los avisos δ/a ≥ 0.1 (o δ/w ≥ 0.1 en placas), D/(2a) &lt; 5 y w/d &lt; 10 son criterios orientativos; no garantizan validez ni un error acotado. No se conoce el espesor de las placas ni de la pared coaxial, por lo que no se verifica espesor ≫ δ. A baja frecuencia, R′ puede ser inadecuada; no se sustituye por una fórmula de corriente continua.</p>
+            <p>Valores iniciales: cobre 5.8×10⁷, aluminio 3.5×10⁷, plata 6.3×10⁷ y oro 4.1×10⁷ S/m (~20 °C). Dieléctricos (εr, tanδ): aire (1.0006, 0), vacío (1, 0), PTFE (2.1, 0.0002), polietileno (2.25, 0.0003). Son valores editables de arranque, no una caracterización de un producto ni de toda la banda.</p>
+            <p>Constantes CODATA 2022: ε₀ = 8.8541878188×10⁻¹² F/m y μ₀ = 1.25663706127×10⁻⁶ H/m. Sin dispersión, rugosidad, radiación ni pérdidas por conectores. <a href="README.md" download>Documentación y pruebas</a>.</p>
+          </details>
+        </div>
+      </section>
+      <section aria-labelledby="secondary-title"><div class="section-heading"><h2 id="secondary-title">Parámetros secundarios</h2><span>PROPIEDADES DE PROPAGACIÓN</span></div><div class="metric-grid secondary" id="secondary-cards"></div></section>
+      <section class="panel analysis-panel" aria-labelledby="analysis-title">
+        <div class="panel-heading"><span class="section-icon">⌁</span><h2 id="analysis-title">Análisis de frecuencia</h2><span class="subtle-badge">10–500 PUNTOS</span></div>
+        <form id="sweep-form" class="sweep-form" novalidate>
+          <p class="analysis-intro">Explora la geometría y los materiales configurados a lo largo de un intervalo. El cálculo individual conserva su frecuencia de operación.</p>
+          <div class="sweep-fields">
+            <div><label for="sweep-start">Frecuencia inicial</label><input id="sweep-start" type="number" min="0" step="any" value="1" required aria-describedby="sweep-start-error"><small class="error" id="sweep-start-error"></small></div>
+            <div><label for="sweep-end">Frecuencia final</label><input id="sweep-end" type="number" min="0" step="any" value="1000" required aria-describedby="sweep-end-error"><small class="error" id="sweep-end-error"></small></div>
+            <div><label for="sweep-unit">Unidad</label><select id="sweep-unit" aria-describedby="sweep-unit-error"><option>Hz</option><option>kHz</option><option selected>MHz</option><option>GHz</option></select><small class="error" id="sweep-unit-error"></small></div>
+            <div><label for="sweep-points">Puntos</label><input id="sweep-points" type="number" min="10" max="500" step="1" value="100" required aria-describedby="sweep-points-error"><small class="error" id="sweep-points-error"></small></div>
+            <div><label for="sweep-scale">Muestreo</label><select id="sweep-scale" aria-describedby="sweep-scale-error"><option value="log" selected>Logarítmico</option><option value="linear">Lineal</option></select><small class="error" id="sweep-scale-error"></small></div>
+          </div>
+          <div class="analysis-actions"><button id="generate-analysis" class="calculate" type="submit">Generar análisis <span>→</span></button><button id="export-csv" class="compact-button" type="button" disabled>Exportar CSV</button></div>
+          <p id="sweep-status" class="form-status" role="status" aria-live="polite">Configura el intervalo y pulsa Generar análisis.</p>
+        </form>
+        <div id="sweep-warnings" class="sweep-warnings" role="status" aria-live="polite" hidden></div>
+        <p class="analysis-validity">Resultados del modelo aproximado, sin garantía de validez física en toda la banda. Se mantienen εr, tanδ y σc constantes; no se modela dispersión.</p>
+      </section>
+      <section class="panel chart-panel" aria-labelledby="chart-title"><div class="panel-heading"><span class="section-icon">⌁</span><h2 id="chart-title">Visualización y resultados</h2><span class="subtle-badge">BARRIDO DE FRECUENCIA</span></div><div class="tabs" role="tablist" aria-label="Visualización"><button id="chart-tab" role="tab" aria-controls="chart-view" aria-selected="true" tabindex="0">Gráficas interactivas</button><button id="table-tab" role="tab" aria-controls="table-view" aria-selected="false" tabindex="-1">Resultado individual</button><button id="sweep-table-tab" role="tab" aria-controls="sweep-table-view" aria-selected="false" tabindex="-1">Tabla de barrido</button></div>
+        <div id="chart-view" role="tabpanel" aria-labelledby="chart-tab">
+          <div class="chart-controls"><div><label for="plot-magnitude">Magnitud</label><select id="plot-magnitude"></select></div><div><label for="plot-scale">Eje de frecuencia</label><select id="plot-scale"><option value="log" selected>Logarítmico</option><option value="linear">Lineal</option></select></div><button id="reset-zoom" class="compact-button" type="button" disabled>Restablecer zoom</button><button id="download-png" class="compact-button" type="button" disabled>Descargar PNG</button></div>
+          <p id="plot-status" class="form-status plot-status" role="status" aria-live="polite"></p>
+          <div id="chart-placeholder" class="chart-empty"><div class="chart-symbol">▥</div><h3>Explora la respuesta en frecuencia</h3><p id="chart-message">Genera un análisis para visualizar una magnitud.<br>El cálculo individual se muestra en sus tarjetas y tabla.</p></div>
+          <div id="plot-container" class="interactive-plot" role="img" aria-label="Gráfica interactiva de parámetros frente a frecuencia" hidden></div>
+          <p class="chart-help">Arrastra para ampliar, desplaza con la herramienta de paneo y coloca el cursor para leer valores. Los huecos representan puntos rechazados. Marcadores ámbar: puntos con avisos.</p>
+        </div>
+        <div id="table-view" role="tabpanel" aria-labelledby="table-tab" hidden><div class="table-scroll"><table><caption>Parámetros eléctricos de la línea seleccionada</caption><thead><tr><th scope="col">Parámetro</th><th scope="col">Símbolo</th><th scope="col">Unidad</th><th scope="col">Resultado</th></tr></thead><tbody id="results-table"></tbody></table></div></div>
+        <div id="sweep-table-view" role="tabpanel" aria-labelledby="sweep-table-tab" hidden><div class="table-scroll sweep-table-scroll"><table><caption id="sweep-table-caption">Genera un análisis para completar esta tabla.</caption><thead><tr><th id="sweep-frequency-heading" scope="col">Frecuencia [MHz]</th><th scope="col">R′ [Ω/m]</th><th scope="col">L′ [H/m]</th><th scope="col">C′ [F/m]</th><th scope="col">G′ [S/m]</th><th scope="col">Re(Z₀) [Ω]</th><th scope="col">Im(Z₀) [Ω]</th><th scope="col">α [Np/m]</th><th scope="col">α [dB/m]</th><th scope="col">β [rad/m]</th><th scope="col">vₚ [m/s]</th><th scope="col">λ [m]</th><th scope="col">Estado y avisos</th></tr></thead><tbody id="sweep-results-table"><tr><td colspan="13">Pendiente de análisis.</td></tr></tbody></table></div></div>
+        <div class="scope-note"><span>ⓘ</span><p><strong>LINEALAB v1.0: análisis de líneas de transmisión.</strong> Un punto calculado no garantiza la validez física del modelo. Los avisos y errores se conservan en la tabla y en el CSV.</p></div>
+      </section>
+    </div>
+  </div>
+  <footer><span><strong>LINEALAB</strong> · <a id="download-project" href="./proyecto.zip" download="LINEALAB-v1.0.zip">Descargar proyecto completo</a> · <a href="validation/REPORT.md" download>Validación</a></span><span>HTML5 / CSS3 / JAVASCRIPT</span></footer>
+</main><script src="calculations.js"></script><script src="secondary.js"></script><script src="sweep.js"></script><script src="charts.js"></script><script id="plotly-script" defer src="vendor/plotly-basic-2.35.2.min.js"></script><script src="app.js"></script><script src="analysis.js"></script>
+</body></html>
